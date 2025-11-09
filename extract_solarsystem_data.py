@@ -11,11 +11,16 @@ print("="*70)
 print("EVE FRONTIER SOLAR SYSTEM DATA EXTRACTOR")
 print("="*70)
 
-# Paths
-CODE_CCP = r"C:\CCP\EVE Frontier\stillness\code.ccp"
-STATIC_FILE = r"extracted_data\solarsystemcontent.static"
-OUTPUT_FILE = r"extracted_data\solarsystemcontent.json"
+# Paths - can be overridden by environment variables (for GUI)
+GAME_PATH = os.environ.get('GAME_PATH', r"C:\CCP\EVE Frontier\stillness")
+OUTPUT_FILE = os.environ.get('OUTPUT_PATH', os.path.join('extracted_data', 'solarsystemcontent.json'))
+
+CODE_CCP = os.path.join(GAME_PATH, "code.ccp")
+STATIC_FILE = os.path.join(os.path.dirname(OUTPUT_FILE) or 'extracted_data', 'solarsystemcontent.static')
 PY312_SCRIPT = "load_fsd_py312.py"
+
+# Ensure output directory exists
+os.makedirs(os.path.dirname(OUTPUT_FILE) or 'extracted_data', exist_ok=True)
 
 # Step 1: Extract .static file if it doesn't exist
 if not os.path.exists(STATIC_FILE):
@@ -35,12 +40,12 @@ if not os.path.exists(STATIC_FILE):
         if not os.path.exists(STATIC_FILE):
             print(f"ERROR: {STATIC_FILE} was not created")
             sys.exit(1)
-        print("✓ Extraction complete")
+        print("OK Extraction complete")
     except Exception as e:
         print(f"ERROR: {e}")
         sys.exit(1)
 else:
-    print(f"\n✓ Found existing {STATIC_FILE}")
+    print(f"\nOK Found existing {STATIC_FILE}")
 
 # Step 2: Check if Python 3.12 is available
 print("\nStep 2: Checking for Python 3.12...")
@@ -61,7 +66,7 @@ for py_path in py312_paths:
         )
         if "3.12" in result.stdout or "3.12" in result.stderr:
             python312 = py_path
-            print(f"✓ Found Python 3.12: {py_path}")
+            print(f"OK Found Python 3.12: {py_path}")
             break
     except:
         continue
@@ -124,7 +129,11 @@ try:
     # Clean up temporary files
     print("\nCleaning up temporary files...")
     temp_dirs = ["temp_code_ccp_py312", "temp_code_ccp"]
-    temp_files = [STATIC_FILE, "extracted_data/analysis_report.txt"]
+    output_dir = os.path.dirname(OUTPUT_FILE) or 'extracted_data'
+    temp_files = [
+        STATIC_FILE, 
+        os.path.join(output_dir, "analysis_report.txt")
+    ]
     
     for temp_dir in temp_dirs:
         if os.path.exists(temp_dir):
@@ -136,7 +145,7 @@ try:
             os.remove(temp_file)
             print(f"  Removed: {temp_file}")
     
-    print("✓ Cleanup complete")
+    print("OK Cleanup complete")
 
 except subprocess.TimeoutExpired:
     print("\nERROR: Process timed out after 5 minutes")

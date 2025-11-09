@@ -194,9 +194,11 @@ def main():
     print("EVE Frontier Data Extractor")
     print("=" * 50)
     
-    # Configuration
-    game_path = r"C:\CCP\EVE Frontier\stillness"
-    output_dir = Path(__file__).parent / "extracted_data"
+    # Configuration - can be overridden by environment variables
+    game_path = os.environ.get('GAME_PATH', r"C:\CCP\EVE Frontier\stillness")
+    output_path = os.environ.get('OUTPUT_PATH', os.path.join('extracted_data', 'solarsystemcontent.json'))
+    output_dir = Path(os.path.dirname(output_path) or 'extracted_data')
+    output_dir.mkdir(parents=True, exist_ok=True)
     
     # Initialize extractor
     extractor = GameDataExtractor(game_path)
