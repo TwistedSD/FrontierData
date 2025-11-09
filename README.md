@@ -24,7 +24,7 @@ Extract solar system data from EVE Frontier game files using a simple cross-plat
    ```
 
 3. **Select paths**:
-   - **EVE Frontier Folder**: Point to your game installation (e.g., `C:\CCP\EVE Frontier`)
+   - **code.ccp File**: Browse to the `code.ccp` file (usually in `EVE Frontier/stillness/code.ccp`)
    - **Output Folder**: Choose where to save the extracted data
 
 4. **Click "Extract Solar System Data"** and wait for completion!
@@ -38,24 +38,27 @@ python extract_solarsystem_data.py
 
 **Specify custom paths**:
 ```bash
-# Custom game installation path
-python extract_solarsystem_data.py --game-path "C:\CCP\EVE Frontier"
+# Custom code.ccp file location
+python extract_solarsystem_data.py --code-ccp "C:\CCP\EVE Frontier\stillness\code.ccp"
 
 # Custom output folder
 python extract_solarsystem_data.py --output-folder "./my_data"
 
 # Both custom paths
-python extract_solarsystem_data.py -g "C:\CCP\EVE Frontier" -o "./output"
+python extract_solarsystem_data.py -c "/path/to/code.ccp" -o "./output"
+
+# macOS example
+python extract_solarsystem_data.py --code-ccp "~/Library/Application Support/CCP/EVE Frontier/stillness/code.ccp"
 
 # Show help
 python extract_solarsystem_data.py --help
 ```
 
 **Arguments**:
-- `--game-path`, `-g`: Path to EVE Frontier installation folder (auto-detected if not specified)
+- `--code-ccp`, `-c`: Path to the `code.ccp` file (usually in the `stillness` folder)
 - `--output-folder`, `-o`: Folder where JSON will be saved (default: `extracted_data/`)
 
-The script automatically validates paths and checks for required game files.
+The script automatically validates the file and checks for `resfileindex.txt` in the same folder.
 
 ## Requirements
 
@@ -66,11 +69,13 @@ The script automatically validates paths and checks for required game files.
 
 ## Installation Paths
 
-The tool auto-detects game installation paths:
+The tool looks for `code.ccp` in these default locations:
 
-- **Windows**: `C:\CCP\EVE Frontier`
-- **macOS**: `~/Library/Application Support/CCP/EVE Frontier`
-- **Linux**: `~/.local/share/CCP/EVE Frontier`
+- **Windows**: `C:\CCP\EVE Frontier\stillness\code.ccp`
+- **macOS**: `~/Library/Application Support/CCP/EVE Frontier/stillness/code.ccp`
+- **Linux**: `~/.local/share/CCP/EVE Frontier/stillness/code.ccp`
+
+You can browse to any location if your installation differs.
 
 ## Extracted Data
 

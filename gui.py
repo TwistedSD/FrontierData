@@ -27,19 +27,25 @@ class ExtractorGUI:
         self.output_path = tk.StringVar(value=self.default_output_path)
         self.is_running = False
         
-        # Check Tk version for compatibility
-        self.tk_version = float(self.root.tk.call('info', 'patchlevel'))
+        # Check Tk version for compatibility (parse major.minor only)
+        try:
+            tk_version_str = self.root.tk.call('info', 'patchlevel')
+            # Parse only major.minor (e.g., "8.6.15" -> 8.6)
+            version_parts = tk_version_str.split('.')
+            self.tk_version = float(f"{version_parts[0]}.{version_parts[1]}")
+        except:
+            self.tk_version = 8.6  # Default fallback
         
         self.setup_ui()
         
     def get_default_game_path(self):
-        """Get default game installation path based on OS"""
+        """Get default code.ccp path based on OS"""
         if self.os_type == "Windows":
-            return r"C:\CCP\EVE Frontier"
+            return r"C:\CCP\EVE Frontier\stillness\code.ccp"
         elif self.os_type == "Darwin":  # macOS
-            return os.path.expanduser("~/Library/Application Support/CCP/EVE Frontier")
+            return os.path.expanduser("~/Library/Application Support/CCP/EVE Frontier/stillness/code.ccp")
         else:  # Linux
-            return os.path.expanduser("~/.local/share/CCP/EVE Frontier")
+            return os.path.expanduser("~/.local/share/CCP/EVE Frontier/stillness/code.ccp")
     
     def get_default_output_path(self):
         """Get default output directory"""
@@ -67,8 +73,8 @@ class ExtractorGUI:
                                 font=title_font)
         title_label.grid(row=0, column=0, columnspan=3, pady=(0, 20))
         
-        # Game Installation Path
-        ttk.Label(main_frame, text="EVE Frontier Folder:").grid(row=1, column=0, sticky=tk.W, pady=5)
+        # code.ccp File Path
+        ttk.Label(main_frame, text="code.ccp File:").grid(row=1, column=0, sticky=tk.W, pady=5)
         game_entry = ttk.Entry(main_frame, textvariable=self.game_path, width=50)
         game_entry.grid(row=1, column=1, sticky=(tk.W, tk.E), padx=5, pady=5)
         ttk.Button(main_frame, text="Browse...", command=self.browse_game_path).grid(row=1, column=2, pady=5)
@@ -105,10 +111,11 @@ class ExtractorGUI:
         status_bar.grid(row=6, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(5, 0))
         
     def browse_game_path(self):
-        """Browse for game installation directory"""
-        path = filedialog.askdirectory(
-            title="Select EVE Frontier Installation Directory",
-            initialdir=os.path.dirname(self.game_path.get())
+        """Browse for code.ccp file"""
+        path = filedialog.askopenfilename(
+            title="Select code.ccp file",
+            initialdir=os.path.dirname(self.game_path.get()) if os.path.exists(os.path.dirname(self.game_path.get())) else os.getcwd(),
+            filetypes=[("CCP Files", "code.ccp"), ("All Files", "*.*")]
         )
         if path:
             self.game_path.set(path)
@@ -137,35 +144,28 @@ class ExtractorGUI:
     
     def validate_paths(self):
         """Validate that paths are correct"""
-        game_path = self.game_path.get()
+        code_ccp_path = self.game_path.get()
         
-        # Check if game path exists
-        if not os.path.exists(game_path):
-            messagebox.showerror("Error", f"EVE Frontier folder does not exist:\n{game_path}")
+        # Check if code.ccp file exists
+        if not os.path.exists(code_ccp_path):
+            messagebox.showerror("Error", f"code.ccp file does not exist:\n{code_ccp_path}")
             return False
         
-        # Auto-detect stillness folder
-        stillness_path = os.path.join(game_path, "stillness")
-        if not os.path.exists(stillness_path):
+        # Check if it's actually the code.ccp file
+        if not code_ccp_path.endswith("code.ccp"):
             messagebox.showerror("Error", 
-                f"Cannot find 'stillness' folder in:\n{game_path}\n\n"
-                "Please select the main EVE Frontier installation folder.")
+                f"Please select the code.ccp file.\n\nSelected: {os.path.basename(code_ccp_path)}")
             return False
         
-        # Check for resfileindex.txt in stillness
-        index_file = os.path.join(stillness_path, "resfileindex.txt")
+        # Get the directory (should be stillness folder)
+        game_dir = os.path.dirname(code_ccp_path)
+        
+        # Check for resfileindex.txt in same directory
+        index_file = os.path.join(game_dir, "resfileindex.txt")
         if not os.path.exists(index_file):
             messagebox.showerror("Error", 
-                f"Cannot find resfileindex.txt in:\n{stillness_path}\n\n"
-                "EVE Frontier installation may be corrupted.")
-            return False
-        
-        # Check for code.ccp in stillness
-        code_ccp = os.path.join(stillness_path, "code.ccp")
-        if not os.path.exists(code_ccp):
-            messagebox.showerror("Error", 
-                f"Cannot find code.ccp in:\n{stillness_path}\n\n"
-                "EVE Frontier installation may be corrupted.")
+                f"Cannot find resfileindex.txt in:\n{game_dir}\n\n"
+                "code.ccp should be in the stillness folder with resfileindex.txt.")
             return False
         
         # Check output folder
@@ -205,27 +205,26 @@ class ExtractorGUI:
     def run_extraction(self):
         """Run the extraction process"""
         try:
-            game_path = self.game_path.get()
+            code_ccp_path = self.game_path.get()
             output_folder = self.output_path.get()
             
             # Build full paths
-            stillness_path = os.path.join(game_path, "stillness")
             output_file = os.path.join(output_folder, "solarsystemcontent.json")
             
-            # Update environment variables for the extraction script
+            # Update environment variables for the extraction script (for backwards compatibility)
             env = os.environ.copy()
-            env['GAME_PATH'] = stillness_path
-            env['OUTPUT_PATH'] = output_file
             
             self.log_message("="*70)
             self.log_message("EVE FRONTIER SOLAR SYSTEM DATA EXTRACTOR")
             self.log_message("="*70)
-            self.log_message(f"Game Path: {game_path}")
+            self.log_message(f"code.ccp: {code_ccp_path}")
             self.log_message(f"Output File: {output_file}")
             self.log_message("")
             
-            # Run the extraction script
-            cmd = [sys.executable, "extract_solarsystem_data.py"]
+            # Run the extraction script with command-line arguments
+            cmd = [sys.executable, "extract_solarsystem_data.py",
+                   "--code-ccp", code_ccp_path,
+                   "--output-folder", output_folder]
             
             process = subprocess.Popen(
                 cmd,

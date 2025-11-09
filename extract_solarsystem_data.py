@@ -18,19 +18,19 @@ Examples:
   # Use default paths
   python extract_solarsystem_data.py
   
-  # Specify custom game folder
-  python extract_solarsystem_data.py --game-path "C:\\CCP\\EVE Frontier"
+  # Specify code.ccp file directly
+  python extract_solarsystem_data.py --code-ccp "C:\\CCP\\EVE Frontier\\stillness\\code.ccp"
   
   # Specify custom output folder
   python extract_solarsystem_data.py --output-folder "C:\\MyData\\EVE"
   
   # Specify both
-  python extract_solarsystem_data.py --game-path "/path/to/eve" --output-folder "./output"
+  python extract_solarsystem_data.py --code-ccp "/path/to/code.ccp" --output-folder "./output"
         """
     )
     parser.add_argument(
-        '--game-path', '-g',
-        help='Path to EVE Frontier installation folder (will look for stillness subfolder)',
+        '--code-ccp', '-c',
+        help='Path to code.ccp file (usually in EVE Frontier/stillness/ folder)',
         default=None
     )
     parser.add_argument(
@@ -46,33 +46,38 @@ Examples:
     print("="*70)
     
     # Determine paths - priority: CLI args > environment variables > defaults
-    if args.game_path:
-        game_folder = args.game_path
-        GAME_PATH = os.path.join(game_folder, "stillness")
+    if args.code_ccp:
+        CODE_CCP = args.code_ccp
+        GAME_PATH = os.path.dirname(CODE_CCP)
     else:
+        # Try environment variable or default Windows path
         GAME_PATH = os.environ.get('GAME_PATH', r"C:\CCP\EVE Frontier\stillness")
+        CODE_CCP = os.path.join(GAME_PATH, "code.ccp")
     
     if args.output_folder:
         OUTPUT_FILE = os.path.join(args.output_folder, 'solarsystemcontent.json')
     else:
         OUTPUT_FILE = os.environ.get('OUTPUT_PATH', os.path.join('extracted_data', 'solarsystemcontent.json'))
     
-    CODE_CCP = os.path.join(GAME_PATH, "code.ccp")
     STATIC_FILE = os.path.join(os.path.dirname(OUTPUT_FILE) or 'extracted_data', 'solarsystemcontent.static')
     PY312_SCRIPT = "load_fsd_py312.py"
     
     # Show paths
-    print(f"\nGame path: {GAME_PATH}")
+    print(f"\ncode.ccp: {CODE_CCP}")
+    print(f"Game folder: {GAME_PATH}")
     print(f"Output file: {OUTPUT_FILE}")
     
-    # Validate game path
-    if not os.path.exists(GAME_PATH):
-        print(f"\nERROR: Game path does not exist: {GAME_PATH}")
+    # Validate code.ccp exists
+    if not os.path.exists(CODE_CCP):
+        print(f"\nERROR: code.ccp file not found: {CODE_CCP}")
+        print("\nPlease specify the path to code.ccp using --code-ccp argument.")
+        print("Example: python extract_solarsystem_data.py --code-ccp \"/path/to/code.ccp\"")
         sys.exit(1)
     
+    # Validate resfileindex.txt exists in same folder
     if not os.path.exists(os.path.join(GAME_PATH, "resfileindex.txt")):
         print(f"\nERROR: Cannot find resfileindex.txt in: {GAME_PATH}")
-        print("Make sure you point to the EVE Frontier installation folder.")
+        print("Make sure code.ccp is in the stillness folder with resfileindex.txt.")
         sys.exit(1)
     
     # Ensure output directory exists
