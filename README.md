@@ -31,11 +31,31 @@ Extract solar system data from EVE Frontier game files using a simple cross-plat
 
 ### Using Command Line
 
+**Basic usage** (uses default paths):
 ```bash
 python extract_solarsystem_data.py
 ```
 
-The script will use default paths and extract to `extracted_data/solarsystemcontent.json`.
+**Specify custom paths**:
+```bash
+# Custom game installation path
+python extract_solarsystem_data.py --game-path "C:\CCP\EVE Frontier"
+
+# Custom output folder
+python extract_solarsystem_data.py --output-folder "./my_data"
+
+# Both custom paths
+python extract_solarsystem_data.py -g "C:\CCP\EVE Frontier" -o "./output"
+
+# Show help
+python extract_solarsystem_data.py --help
+```
+
+**Arguments**:
+- `--game-path`, `-g`: Path to EVE Frontier installation folder (auto-detected if not specified)
+- `--output-folder`, `-o`: Folder where JSON will be saved (default: `extracted_data/`)
+
+The script automatically validates paths and checks for required game files.
 
 ## Requirements
 
