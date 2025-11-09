@@ -27,6 +27,9 @@ class ExtractorGUI:
         self.output_path = tk.StringVar(value=self.default_output_path)
         self.is_running = False
         
+        # Check Tk version for compatibility
+        self.tk_version = float(self.root.tk.call('info', 'patchlevel'))
+        
         self.setup_ui()
         
     def get_default_game_path(self):
@@ -54,9 +57,14 @@ class ExtractorGUI:
         main_frame.columnconfigure(1, weight=1)
         main_frame.rowconfigure(4, weight=1)
         
-        # Title
+        # Title (use default font for better compatibility)
+        try:
+            title_font = ('Helvetica', 16, 'bold')
+        except:
+            title_font = ('TkDefaultFont', 16, 'bold')
+        
         title_label = ttk.Label(main_frame, text="EVE Frontier Solar System Data Extractor", 
-                                font=('Helvetica', 16, 'bold'))
+                                font=title_font)
         title_label.grid(row=0, column=0, columnspan=3, pady=(0, 20))
         
         # Game Installation Path
@@ -71,9 +79,9 @@ class ExtractorGUI:
         output_entry.grid(row=2, column=1, sticky=(tk.W, tk.E), padx=5, pady=5)
         ttk.Button(main_frame, text="Browse...", command=self.browse_output_path).grid(row=2, column=2, pady=5)
         
-        # Extract Button
+        # Extract Button (no special styling for compatibility)
         self.extract_btn = ttk.Button(main_frame, text="Extract Solar System Data", 
-                                      command=self.start_extraction, style='Accent.TButton')
+                                      command=self.start_extraction)
         self.extract_btn.grid(row=3, column=0, columnspan=3, pady=20)
         
         # Progress Bar
@@ -274,9 +282,42 @@ class ExtractorGUI:
                 self.status_var.set("Ready")
 
 def main():
-    root = tk.Tk()
-    app = ExtractorGUI(root)
-    root.mainloop()
+    try:
+        root = tk.Tk()
+        
+        # Check Tk version
+        tk_version = root.tk.call('info', 'patchlevel')
+        print(f"Tk version: {tk_version}")
+        
+        # Create the app
+        app = ExtractorGUI(root)
+        root.mainloop()
+        
+    except tk.TclError as e:
+        error_msg = str(e)
+        print(f"ERROR: Failed to start GUI: {e}")
+        
+        if "version" in error_msg.lower() or "required" in error_msg.lower():
+            print("\n" + "="*70)
+            print("Your Tk/Tcl version is not compatible with this GUI.")
+            print("="*70)
+            print("\nOptions to proceed:")
+            print("1. Use the command-line version (no GUI required):")
+            print("     python extract_solarsystem_data.py")
+            print("\n2. Update Python to the latest version:")
+            print("     https://www.python.org/downloads/")
+            print("\n3. On macOS, install Python via Homebrew:")
+            print("     brew install python-tk@3.12")
+        else:
+            print("\nPlease use the command-line version:")
+            print("  python extract_solarsystem_data.py")
+        
+        sys.exit(1)
+    except Exception as e:
+        print(f"ERROR: Unexpected error starting GUI: {e}")
+        print("\nPlease use the command-line version:")
+        print("  python extract_solarsystem_data.py")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

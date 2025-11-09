@@ -103,6 +103,18 @@ FrontierData/
 
 ## Troubleshooting
 
+**GUI won't start on macOS (Tk version error)**
+- Some older macOS Python installations have incompatible Tk versions
+- **Solution 1**: Use the command-line version instead:
+  ```bash
+  python extract_solarsystem_data.py
+  ```
+- **Solution 2**: Install Python via Homebrew (recommended):
+  ```bash
+  brew install python@3.12 python-tk@3.12
+  ```
+- **Solution 3**: Download the latest Python from python.org
+
 **"Python 3.12 NOT FOUND"**
 - Install Python 3.12 from python.org
 - Verify installation: `python3.12 --version`
