@@ -30,6 +30,7 @@ class ExtractorGUI:
         # Extraction options
         self.extract_solarsystem = tk.BooleanVar(value=True)
         self.extract_blueprints = tk.BooleanVar(value=True)
+        self.extract_types = tk.BooleanVar(value=True)
         
         # Check Tk version for compatibility (parse major.minor only)
         try:
@@ -97,6 +98,8 @@ class ExtractorGUI:
                        variable=self.extract_solarsystem).grid(row=0, column=0, sticky=tk.W, pady=2)
         ttk.Checkbutton(selection_frame, text="Blueprints Data (blueprints.json - 115 KB)", 
                        variable=self.extract_blueprints).grid(row=1, column=0, sticky=tk.W, pady=2)
+        ttk.Checkbutton(selection_frame, text="Types Data (types.json - 10 MB)", 
+                       variable=self.extract_types).grid(row=2, column=0, sticky=tk.W, pady=2)
         
         # Extract Button (no special styling for compatibility)
         self.extract_btn = ttk.Button(main_frame, text="Extract Selected Data", 
@@ -191,6 +194,30 @@ class ExtractorGUI:
                 return False
         
         return True
+    
+    def find_python312(self):
+        """Find Python 3.12 installation"""
+        py312_paths = [
+            r"C:\Python312\python.exe",
+            r"C:\Program Files\Python312\python.exe",
+            r"C:\Users\demps\AppData\Local\Programs\Python\Python312\python.exe",
+            "py -3.12",
+            "python3.12"
+        ]
+        
+        for py_path in py312_paths:
+            try:
+                result = subprocess.run(
+                    [py_path if not py_path.startswith("py ") else "py", 
+                     "-3.12" if py_path.startswith("py ") else "--version"],
+                    capture_output=True, text=True, timeout=5
+                )
+                if "3.12" in result.stdout or "3.12" in result.stderr:
+                    return py_path
+            except:
+                continue
+        
+        return None
     
     def start_extraction(self):
         """Start the extraction process in a separate thread"""
@@ -344,9 +371,61 @@ class ExtractorGUI:
                 
                 self.log_message("")
             
+            # Extract Types Data
+            if self.extract_types.get():
+                self.log_message("="*70)
+                self.log_message("EXTRACTING TYPES DATA")
+                self.log_message("="*70)
+                
+                # Find Python 3.12 (same as solar systems extraction)
+                python312_path = self.find_python312()
+                if not python312_path:
+                    self.log_message("✗ Python 3.12 not found - required for types extraction")
+                    self.log_message("")
+                else:
+                    # Run the types extraction using extract.py with Python 3.12
+                    cmd = [python312_path, "extract.py",
+                           "--types",
+                           "--game-path", game_dir,
+                           "--output", output_folder]
+                    
+                    process = subprocess.Popen(
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True,
+                        bufsize=1,
+                        cwd=os.path.dirname(os.path.abspath(__file__))
+                    )
+                    
+                    # Read output line by line
+                    for line in process.stdout:
+                        self.log_message(line.rstrip())
+                    
+                    process.wait()
+                    
+                    if process.returncode == 0:
+                        extraction_count += 1
+                        self.log_message("✓ Types data extracted successfully")
+                    else:
+                        self.log_message("✗ Types extraction failed")
+                    
+                    self.log_message("")
+            
             # Summary
             self.log_message("="*70)
             if extraction_count > 0:
+                # Cleanup __pycache__
+                pycache_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "__pycache__")
+                if os.path.exists(pycache_dir):
+                    try:
+                        import shutil
+                        shutil.rmtree(pycache_dir)
+                        self.log_message("Cleaned up __pycache__")
+                        self.log_message("="*70)
+                    except:
+                        pass  # Ignore cleanup errors
+                
                 self.log_message(f"SUCCESS - {extraction_count} data type(s) extracted!")
                 self.log_message("="*70)
                 self.status_var.set(f"Completed - {extraction_count} extracted")

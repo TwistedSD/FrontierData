@@ -1,25 +1,22 @@
 # EVE Frontier Data Extractor
 
-Extract game data from EVE Frontier using a cross-platform GUI or command-line interface.
+Extract game data from EVE Frontier using a GUI or command-line interface.
 
 ## Features
 
-✅ **Multiple data types** - Solar systems (24,426) and blueprints (263)  
-✅ **Cross-platform GUI** - Works on Windows (macOS support may be limited)  
+✅ **Three data types** - Solar systems (24,426), blueprints (263), and types (32,159)  
+✅ **Cross-platform GUI** - Works on Windows, macOS, and Linux  
 ✅ **Command-line tool** - For automation and scripting  
 ✅ **Automatic extraction** - No manual file handling  
-✅ **Clean output** - JSON format with auto-cleanup
-
-> **Note**: macOS support is experimental and may not work reliably. Windows users should have no issues.  
+✅ **Clean output** - Formatted JSON with auto-cleanup
 
 ## Quick Start
 
 ### GUI (Recommended)
 
-1. **Install Python 3.12**:
+1. **Install Python 3.12+**:
    ```bash
    # Download from python.org
-   python3.12 -m pip install pyyaml
    ```
 
 2. **Run the GUI**:
@@ -27,29 +24,29 @@ Extract game data from EVE Frontier using a cross-platform GUI or command-line i
    python gui.py
    ```
 
-3. **Select options**:
+3. **Extract data**:
    - Browse to `code.ccp` file (in `EVE Frontier/stillness/`)
    - Choose output folder
-   - Check which data types to extract
+   - Select which data types to extract (all selected by default)
    - Click "Extract Selected Data"
 
 ### Command Line
 
 ```bash
-# Use default paths
-python extract_cli.py
+# Extract types data
+python extract.py --types
 
 # Custom paths
-python extract_cli.py --code-ccp "/path/to/code.ccp" --output-folder "./output"
+python extract.py --types --game-path "C:\CCP\EVE Frontier\stillness" --output "./output"
 
 # Help
-python extract_cli.py --help
+python extract.py --help
 ```
 
 ## Requirements
 
-- **Python 3.12+** (required for FSD parsing)
-- **PyYAML** - Install with: `python3.12 -m pip install pyyaml`
+- **Python 3.12+** (required for parsing EVE Frontier's binary data)
+- No additional dependencies needed
 
 ## Default Installation Paths
 
@@ -62,38 +59,41 @@ python extract_cli.py --help
 ### Solar Systems (`solarsystemcontent.json` - 389 MB)
 - **24,426 systems** with coordinates, planets, stargates, security status
 - **83,356 planets** with moons, stations, lagrange points
-- **Star properties**: spectral class, luminosity, age, frost line
+- Star properties: spectral class, luminosity, age, frost line
 
 ### Blueprints (`blueprints.json` - 115 KB)
 - **263 blueprints** with manufacturing recipes
 - Materials required and products created
 - Production time and limits
 
+### Types (`types.json` - 10 MB)
+- **32,159 item types** with properties
+- Base price, capacity, mass, volume, radius
+- Group ID, platform availability, published status
+
 ## How It Works
 
-1. Reads `resfileindex.txt` to locate data files
-2. Extracts `.static` files from ResFiles hash storage
-3. Loads Python modules from `code.ccp` (10,472 files)
-4. Parses FSD binary format using game's official loaders
-5. Converts to JSON and cleans up temporary files
+1. Reads `resfileindex.txt` to locate data files in ResFiles hash storage
+2. Extracts binary data (`.static`, `.fsdbinary`) from ResFiles
+3. Uses EVE Frontier's native loaders (`typesLoader.pyd`, `code.ccp`)
+4. Converts to formatted JSON and cleans up temporary files
 
 ## Troubleshooting
 
-**macOS compatibility warning**
-- macOS support is experimental and may not work reliably
-- Recommended: Use Windows for best results
-- If issues occur on macOS, try command line: `python extract_cli.py`
-
-**macOS GUI issues**
-- Use command line instead: `python extract_cli.py`
-- Or install Python via Homebrew: `brew install python@3.12 python-tk@3.12`
-
 **Python 3.12 not found**
 - Install from [python.org](https://www.python.org/downloads/)
-- Verify: `python3.12 --version`
+- Verify: `python --version` or `python3.12 --version`
+- The GUI will automatically find Python 3.12
 
 **Files not found**
-- Ensure EVE Frontier is installed and `code.ccp` path is correct
+- Ensure EVE Frontier is installed
+- Verify `code.ccp` path is correct (in `stillness` folder)
+- Check that `resfileindex.txt` exists in the same directory
+
+**Extraction fails**
+- Close EVE Frontier client if running
+- Try running as administrator (Windows)
+- Check available disk space (solar systems = 389 MB)
 
 ---
 

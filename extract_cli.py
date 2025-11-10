@@ -202,6 +202,8 @@ Your current Python version: """ + sys.version)
             os.path.join(output_dir, "analysis_report.txt")
         ]
         
+        temp_dirs.append("__pycache__")  # Add pycache cleanup
+        
         for temp_dir in temp_dirs:
             if os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)
