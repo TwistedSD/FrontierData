@@ -5,10 +5,12 @@ Extract game data from EVE Frontier using a cross-platform GUI or command-line i
 ## Features
 
 ✅ **Multiple data types** - Solar systems (24,426) and blueprints (263)  
-✅ **Cross-platform GUI** - Works on Windows, macOS, and Linux  
+✅ **Cross-platform GUI** - Works on Windows (macOS support may be limited)  
 ✅ **Command-line tool** - For automation and scripting  
 ✅ **Automatic extraction** - No manual file handling  
-✅ **Clean output** - JSON format with auto-cleanup  
+✅ **Clean output** - JSON format with auto-cleanup
+
+> **Note**: macOS support is experimental and may not work reliably. Windows users should have no issues.  
 
 ## Quick Start
 
@@ -76,6 +78,11 @@ python extract_cli.py --help
 5. Converts to JSON and cleans up temporary files
 
 ## Troubleshooting
+
+**macOS compatibility warning**
+- macOS support is experimental and may not work reliably
+- Recommended: Use Windows for best results
+- If issues occur on macOS, try command line: `python extract_cli.py`
 
 **macOS GUI issues**
 - Use command line instead: `python extract_cli.py`
