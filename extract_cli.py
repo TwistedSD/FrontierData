@@ -16,16 +16,16 @@ def main():
         epilog="""
 Examples:
   # Use default paths
-  python extract_solarsystem_data.py
+  python extract_cli.py
   
   # Specify code.ccp file directly
-  python extract_solarsystem_data.py --code-ccp "C:\\CCP\\EVE Frontier\\stillness\\code.ccp"
+  python extract_cli.py --code-ccp "C:\\CCP\\EVE Frontier\\stillness\\code.ccp"
   
   # Specify custom output folder
-  python extract_solarsystem_data.py --output-folder "C:\\MyData\\EVE"
+  python extract_cli.py --output-folder "C:\\MyData\\EVE"
   
   # Specify both
-  python extract_solarsystem_data.py --code-ccp "/path/to/code.ccp" --output-folder "./output"
+  python extract_cli.py --code-ccp "/path/to/code.ccp" --output-folder "./output"
         """
     )
     parser.add_argument(
@@ -71,7 +71,7 @@ Examples:
     if not os.path.exists(CODE_CCP):
         print(f"\nERROR: code.ccp file not found: {CODE_CCP}")
         print("\nPlease specify the path to code.ccp using --code-ccp argument.")
-        print("Example: python extract_solarsystem_data.py --code-ccp \"/path/to/code.ccp\"")
+        print("Example: python extract_cli.py --code-ccp \"/path/to/code.ccp\"")
         sys.exit(1)
     
     # Validate resfileindex.txt exists in same folder
@@ -87,13 +87,13 @@ Examples:
     if not os.path.exists(STATIC_FILE):
         print("\nStep 1: Extracting .static file from game files...")
         try:
-            # Set environment variables for extract_game_data.py
+            # Set environment variables for extract_static_files.py
             env = os.environ.copy()
             env['GAME_PATH'] = GAME_PATH
             env['OUTPUT_PATH'] = OUTPUT_FILE
             
             result = subprocess.run(
-                [sys.executable, "extract_game_data.py"],
+                [sys.executable, "extract_static_files.py"],
                 capture_output=True,
                 text=True,
                 timeout=60,

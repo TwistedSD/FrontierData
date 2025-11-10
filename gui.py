@@ -27,6 +27,10 @@ class ExtractorGUI:
         self.output_path = tk.StringVar(value=self.default_output_path)
         self.is_running = False
         
+        # Extraction options
+        self.extract_solarsystem = tk.BooleanVar(value=True)
+        self.extract_blueprints = tk.BooleanVar(value=True)
+        
         # Check Tk version for compatibility (parse major.minor only)
         try:
             tk_version_str = self.root.tk.call('info', 'patchlevel')
@@ -61,7 +65,7 @@ class ExtractorGUI:
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
         main_frame.columnconfigure(1, weight=1)
-        main_frame.rowconfigure(4, weight=1)
+        main_frame.rowconfigure(6, weight=1)  # Changed from 4 to 6 (log area)
         
         # Title (use default font for better compatibility)
         try:
@@ -69,7 +73,7 @@ class ExtractorGUI:
         except:
             title_font = ('TkDefaultFont', 16, 'bold')
         
-        title_label = ttk.Label(main_frame, text="EVE Frontier Solar System Data Extractor", 
+        title_label = ttk.Label(main_frame, text="EVE Frontier Data Extractor", 
                                 font=title_font)
         title_label.grid(row=0, column=0, columnspan=3, pady=(0, 20))
         
@@ -85,19 +89,28 @@ class ExtractorGUI:
         output_entry.grid(row=2, column=1, sticky=(tk.W, tk.E), padx=5, pady=5)
         ttk.Button(main_frame, text="Browse...", command=self.browse_output_path).grid(row=2, column=2, pady=5)
         
+        # Data Selection Frame
+        selection_frame = ttk.LabelFrame(main_frame, text="Select Data to Extract", padding="10")
+        selection_frame.grid(row=3, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=10)
+        
+        ttk.Checkbutton(selection_frame, text="Solar System Data (solarsystemcontent.json - 389 MB)", 
+                       variable=self.extract_solarsystem).grid(row=0, column=0, sticky=tk.W, pady=2)
+        ttk.Checkbutton(selection_frame, text="Blueprints Data (blueprints.json - 115 KB)", 
+                       variable=self.extract_blueprints).grid(row=1, column=0, sticky=tk.W, pady=2)
+        
         # Extract Button (no special styling for compatibility)
-        self.extract_btn = ttk.Button(main_frame, text="Extract Solar System Data", 
+        self.extract_btn = ttk.Button(main_frame, text="Extract Selected Data", 
                                       command=self.start_extraction)
-        self.extract_btn.grid(row=3, column=0, columnspan=3, pady=20)
+        self.extract_btn.grid(row=4, column=0, columnspan=3, pady=20)
         
         # Progress Bar
         self.progress = ttk.Progressbar(main_frame, mode='indeterminate', length=400)
-        self.progress.grid(row=4, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=5)
+        self.progress.grid(row=5, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=5)
         self.progress.grid_remove()  # Hide initially
         
         # Progress/Output Area
         output_frame = ttk.LabelFrame(main_frame, text="Output Log", padding="5")
-        output_frame.grid(row=5, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S), pady=5)
+        output_frame.grid(row=6, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S), pady=5)
         output_frame.columnconfigure(0, weight=1)
         output_frame.rowconfigure(0, weight=1)
         
@@ -108,7 +121,7 @@ class ExtractorGUI:
         # Status Bar
         self.status_var = tk.StringVar(value="Ready")
         status_bar = ttk.Label(main_frame, textvariable=self.status_var, relief=tk.SUNKEN, anchor=tk.W)
-        status_bar.grid(row=6, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(5, 0))
+        status_bar.grid(row=7, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(5, 0))
         
     def browse_game_path(self):
         """Browse for code.ccp file"""
@@ -185,6 +198,11 @@ class ExtractorGUI:
             messagebox.showwarning("Warning", "Extraction is already running!")
             return
         
+        # Check if at least one option is selected
+        if not self.extract_solarsystem.get() and not self.extract_blueprints.get():
+            messagebox.showwarning("Warning", "Please select at least one data type to extract!")
+            return
+        
         if not self.validate_paths():
             return
         
@@ -207,63 +225,140 @@ class ExtractorGUI:
         try:
             code_ccp_path = self.game_path.get()
             output_folder = self.output_path.get()
-            
-            # Build full paths
-            output_file = os.path.join(output_folder, "solarsystemcontent.json")
-            
-            # Update environment variables for the extraction script (for backwards compatibility)
-            env = os.environ.copy()
+            game_dir = os.path.dirname(code_ccp_path)
             
             self.log_message("="*70)
-            self.log_message("EVE FRONTIER SOLAR SYSTEM DATA EXTRACTOR")
+            self.log_message("EVE FRONTIER DATA EXTRACTOR")
             self.log_message("="*70)
             self.log_message(f"code.ccp: {code_ccp_path}")
-            self.log_message(f"Output File: {output_file}")
+            self.log_message(f"Output folder: {output_folder}")
             self.log_message("")
             
-            # Run the extraction script with command-line arguments
-            cmd = [sys.executable, "extract_solarsystem_data.py",
-                   "--code-ccp", code_ccp_path,
-                   "--output-folder", output_folder]
+            extraction_count = 0
             
-            process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,
-                env=env,
-                cwd=os.path.dirname(os.path.abspath(__file__))
-            )
-            
-            # Read output line by line
-            for line in process.stdout:
-                self.log_message(line.rstrip())
-            
-            process.wait()
-            
-            if process.returncode == 0:
-                self.log_message("")
+            # Extract Solar System Data
+            if self.extract_solarsystem.get():
                 self.log_message("="*70)
-                self.log_message("SUCCESS - EXTRACTION COMPLETED!")
+                self.log_message("EXTRACTING SOLAR SYSTEM DATA")
                 self.log_message("="*70)
-                self.status_var.set("Completed successfully")
                 
-                # Show output file size
-                if os.path.exists(output_file):
-                    size_mb = os.path.getsize(output_file) / (1024*1024)
-                    self.log_message(f"Output file size: {size_mb:.1f} MB")
+                output_file = os.path.join(output_folder, "solarsystemcontent.json")
+                
+                # Run the extraction script with command-line arguments
+                cmd = [sys.executable, "extract_cli.py",
+                       "--code-ccp", code_ccp_path,
+                       "--output-folder", output_folder]
+                
+                process = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    bufsize=1,
+                    cwd=os.path.dirname(os.path.abspath(__file__))
+                )
+                
+                # Read output line by line
+                for line in process.stdout:
+                    self.log_message(line.rstrip())
+                
+                process.wait()
+                
+                if process.returncode == 0:
+                    extraction_count += 1
+                    self.log_message("✓ Solar system data extracted successfully")
+                else:
+                    self.log_message("✗ Solar system extraction failed")
+                
+                self.log_message("")
+            
+            # Extract Blueprints Data
+            if self.extract_blueprints.get():
+                self.log_message("="*70)
+                self.log_message("EXTRACTING BLUEPRINTS DATA")
+                self.log_message("="*70)
+                
+                # Import the extractor
+                sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+                from extract_static_files import GameDataExtractor
+                
+                try:
+                    # Initialize extractor
+                    extractor = GameDataExtractor(game_dir)
+                    extractor.parse_index_file()
+                    
+                    # Find blueprints
+                    matches = extractor.find_entry("blueprints.static")
+                    
+                    if matches:
+                        entry = matches[0]
+                        self.log_message(f"Found: {entry['resource_path']}")
+                        self.log_message(f"Size: {entry['size']:,} bytes")
+                        
+                        # Extract the data
+                        blueprints_static = os.path.join(output_folder, "blueprints.static")
+                        data = extractor.extract_data(entry, blueprints_static)
+                        
+                        if data:
+                            # Convert SQLite to JSON
+                            self.log_message("Converting to JSON...")
+                            import sqlite3
+                            import json
+                            
+                            conn = sqlite3.connect(blueprints_static)
+                            cursor = conn.cursor()
+                            
+                            # Get tables
+                            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                            tables = [row[0] for row in cursor.fetchall()]
+                            
+                            output_data = {}
+                            for table in tables:
+                                cursor.execute(f"SELECT * FROM {table}")
+                                rows = cursor.fetchall()
+                                col_names = [desc[0] for desc in cursor.description]
+                                output_data[table] = [
+                                    {col_names[i]: row[i] for i in range(len(col_names))}
+                                    for row in rows
+                                ]
+                            
+                            conn.close()
+                            
+                            # Save JSON
+                            blueprints_json = os.path.join(output_folder, "blueprints.json")
+                            with open(blueprints_json, 'w', encoding='utf-8') as f:
+                                json.dump(output_data, f, indent=2, ensure_ascii=False)
+                            
+                            # Clean up .static file
+                            os.remove(blueprints_static)
+                            
+                            self.log_message(f"✓ Blueprints data extracted: {len(output_data.get('cache', []))} blueprints")
+                            extraction_count += 1
+                        else:
+                            self.log_message("✗ Failed to extract blueprints data")
+                    else:
+                        self.log_message("✗ Blueprints not found in game files")
+                        
+                except Exception as e:
+                    self.log_message(f"✗ Error extracting blueprints: {e}")
+                
+                self.log_message("")
+            
+            # Summary
+            self.log_message("="*70)
+            if extraction_count > 0:
+                self.log_message(f"SUCCESS - {extraction_count} data type(s) extracted!")
+                self.log_message("="*70)
+                self.status_var.set(f"Completed - {extraction_count} extracted")
                 
                 messagebox.showinfo("Success", 
-                    f"Solar system data extracted successfully!\n\n"
-                    f"Output: {output_file}")
+                    f"Successfully extracted {extraction_count} data type(s)!\n\n"
+                    f"Output folder: {output_folder}")
             else:
-                self.log_message("")
-                self.log_message("="*70)
                 self.log_message("EXTRACTION FAILED")
                 self.log_message("="*70)
                 self.status_var.set("Extraction failed")
-                messagebox.showerror("Error", "Extraction failed. Check the output log for details.")
+                messagebox.showerror("Error", "All extractions failed. Check the output log for details.")
         
         except Exception as e:
             self.log_message(f"ERROR: {str(e)}")
@@ -271,6 +366,14 @@ class ExtractorGUI:
             messagebox.showerror("Error", f"An error occurred:\n\n{str(e)}")
         
         finally:
+            # Stop and hide progress bar
+            self.progress.stop()
+            self.progress.grid_remove()
+            
+            self.is_running = False
+            self.extract_btn.configure(state='normal')
+            if self.status_var.get() == "Please wait - Extracting data...":
+                self.status_var.set("Ready")
             # Stop and hide progress bar
             self.progress.stop()
             self.progress.grid_remove()
@@ -302,20 +405,20 @@ def main():
             print("="*70)
             print("\nOptions to proceed:")
             print("1. Use the command-line version (no GUI required):")
-            print("     python extract_solarsystem_data.py")
+            print("     python extract_cli.py")
             print("\n2. Update Python to the latest version:")
             print("     https://www.python.org/downloads/")
             print("\n3. On macOS, install Python via Homebrew:")
             print("     brew install python-tk@3.12")
         else:
             print("\nPlease use the command-line version:")
-            print("  python extract_solarsystem_data.py")
+            print("  python extract_cli.py")
         
         sys.exit(1)
     except Exception as e:
         print(f"ERROR: Unexpected error starting GUI: {e}")
         print("\nPlease use the command-line version:")
-        print("  python extract_solarsystem_data.py")
+        print("  python extract_cli.py")
         sys.exit(1)
 
 if __name__ == "__main__":
