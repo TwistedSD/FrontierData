@@ -196,7 +196,7 @@ def main():
     
     # Configuration - can be overridden by environment variables
     game_path = os.environ.get('GAME_PATH', r"C:\CCP\EVE Frontier\stillness")
-    output_path = os.environ.get('OUTPUT_PATH', os.path.join('extracted_data', 'solarsystemcontent.json'))
+    output_path = os.environ.get('OUTPUT_PATH', os.path.join('extracted_data', 'Galaxy.json'))
     output_dir = Path(os.path.dirname(output_path) or 'extracted_data')
     output_dir.mkdir(parents=True, exist_ok=True)
     
@@ -219,7 +219,7 @@ def main():
     # Extract the first match
     if matches:
         entry = matches[0]
-        output_file = output_dir / "solarsystemcontent.static"
+        output_file = output_dir / "Galaxy.static"
         data = extractor.extract_data(entry, output_file)
         
         if data:

@@ -35,7 +35,7 @@ Examples:
     )
     parser.add_argument(
         '--output-folder', '-o',
-        help='Folder where solarsystemcontent.json will be saved',
+        help='Folder where Galaxy.json will be saved',
         default=None
     )
     
@@ -55,11 +55,11 @@ Examples:
         CODE_CCP = os.path.join(GAME_PATH, "code.ccp")
     
     if args.output_folder:
-        OUTPUT_FILE = os.path.join(args.output_folder, 'solarsystemcontent.json')
+        OUTPUT_FILE = os.path.join(args.output_folder, 'Galaxy.json')
     else:
-        OUTPUT_FILE = os.environ.get('OUTPUT_PATH', os.path.join('extracted_data', 'solarsystemcontent.json'))
+        OUTPUT_FILE = os.environ.get('OUTPUT_PATH', os.path.join('extracted_data', 'Galaxy.json'))
     
-    STATIC_FILE = os.path.join(os.path.dirname(OUTPUT_FILE) or 'extracted_data', 'solarsystemcontent.static')
+    STATIC_FILE = os.path.join(os.path.dirname(OUTPUT_FILE) or 'extracted_data', 'Galaxy.static')
     PY312_SCRIPT = "load_fsd_py312.py"
     
     # Show paths
@@ -83,36 +83,38 @@ Examples:
     # Ensure output directory exists
     os.makedirs(os.path.dirname(OUTPUT_FILE) or 'extracted_data', exist_ok=True)
     
-    # Step 1: Extract .static file if it doesn't exist
-    if not os.path.exists(STATIC_FILE):
-        print("\nStep 1: Extracting .static file from game files...")
-        try:
-            # Set environment variables for extract_static_files.py
-            env = os.environ.copy()
-            env['GAME_PATH'] = GAME_PATH
-            env['OUTPUT_PATH'] = OUTPUT_FILE
-            
-            result = subprocess.run(
-                [sys.executable, "extract_static_files.py"],
-                capture_output=True,
-                text=True,
-                timeout=60,
-                env=env
-            )
-            print(result.stdout)
-            if result.returncode != 0:
-                print("ERROR extracting game data:")
-                print(result.stderr)
-                sys.exit(1)
-            if not os.path.exists(STATIC_FILE):
-                print(f"ERROR: {STATIC_FILE} was not created")
-                sys.exit(1)
-            print("OK Extraction complete")
-        except Exception as e:
-            print(f"ERROR: {e}")
+    # Step 1: Always extract .static file fresh (handles game updates)
+    # Delete old static file if it exists to ensure we get latest data
+    if os.path.exists(STATIC_FILE):
+        print(f"\nRemoving old static file to get fresh data...")
+        os.remove(STATIC_FILE)
+    
+    print("\nStep 1: Extracting .static file from game files...")
+    try:
+        # Set environment variables for extract_static_files.py
+        env = os.environ.copy()
+        env['GAME_PATH'] = GAME_PATH
+        env['OUTPUT_PATH'] = OUTPUT_FILE
+        
+        result = subprocess.run(
+            [sys.executable, "extract_static_files.py"],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            env=env
+        )
+        print(result.stdout)
+        if result.returncode != 0:
+            print("ERROR extracting game data:")
+            print(result.stderr)
             sys.exit(1)
-    else:
-        print(f"\nOK Found existing {STATIC_FILE}")
+        if not os.path.exists(STATIC_FILE):
+            print(f"ERROR: {STATIC_FILE} was not created")
+            sys.exit(1)
+        print("[OK] Extraction complete")
+    except Exception as e:
+        print(f"ERROR: {e}")
+        sys.exit(1)
     
     # Step 2: Check if Python 3.12 is available
     print("\nStep 2: Checking for Python 3.12...")
