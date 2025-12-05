@@ -4,18 +4,18 @@ Extract game data from EVE Frontier using a GUI or command-line interface.
 
 ## Features
 
-✅ **Five data types** - Solar systems, blueprints, types, ships with dogma, frontier types  
-✅ **Cross-platform GUI** - Works on Windows, macOS, and Linux  
-✅ **Command-line tool** - For automation and scripting  
-✅ **Dynamic hash reading** - Automatically handles game updates (reads from `resfileindex.txt`)  
-✅ **Full ship stats** - All 54 dogma attributes including slots, power, HP, resistances  
-✅ **Clean output** - Formatted JSON with auto-cleanup
+- **7 extraction options** - Galaxy, Ships, Modules, Blueprints, Ammo, Fuel, Materials
+- **Full dogma attributes** - Stats for ships, modules, ammo (damage, CPU, power, etc.)
+- **Clean focused exports** - Each file contains only its specific category
+- **Cross-platform GUI** - Works on Windows, macOS, and Linux
+- **Command-line tool** - For automation and scripting
+- **Dynamic hash reading** - Automatically handles game updates (reads from `resfileindex.txt`)
 
 ## Quick Start
 
 ### GUI (Recommended)
 
-1. **Install Python 3.12+**:
+1. **Install Python 3.12+** (required for binary data extraction):
    ```bash
    # Download from python.org
    ```
@@ -28,7 +28,7 @@ Extract game data from EVE Frontier using a GUI or command-line interface.
 3. **Extract data**:
    - Browse to `code.ccp` file (in `EVE Frontier/stillness/`)
    - Choose output folder
-   - Select which data types to extract (all selected by default)
+   - Select data types: Galaxy, Ships, Modules, Blueprints, Ammo, Fuel, Materials
    - Click "Extract Selected Data"
 
 ### Command Line
@@ -39,6 +39,9 @@ python extract.py --all
 
 # Extract specific data types
 python extract.py --types --blueprints --ships
+
+# Extract dogma for all frontier types
+python extract.py --dogma
 
 # Custom paths
 python extract.py --types --game-path "C:\CCP\EVE Frontier\stillness" --output "./output"
@@ -63,65 +66,64 @@ python extract.py --help
 
 ## Extracted Data
 
-### Solar Systems (`solarsystemcontent.json` - 389 MB)
-- **24,426 systems** with coordinates, planets, stargates, security status
+### Galaxy (`Galaxy.json` - ~389 MB)
+- **24,426 solar systems** with coordinates, planets, stargates, security status
 - **83,356 planets** with moons, stations, lagrange points
 - Star properties: spectral class, luminosity, age, frost line
 
-### Blueprints (`blueprints.json` - ~150 KB)
+### Ships (`Ships.json` - ~128 KB)
+- **14 ships** with full dogma attributes
+- **54 stats** per ship: slots (H/M/L/E), hardpoints, power, CPU, HP, velocity, warp speed
+- Ships: TADES, Forlorn, Skiff, Foreman, Marshal, Echon, Rover, Carrier, Barge, Lurcher, Dreamer, Epoch, Carom, Stride
+
+### Modules (`Modules.json` - ~195 KB)
+- **142 modules** with dogma attributes
+- Weapons, shields, armor, propulsion, mining equipment
+- Stats: CPU, power grid, damage, bonuses
+
+### Blueprints (`Blueprints.json` - ~130 KB)
 - **265 blueprints** with manufacturing recipes
 - Materials required and products created
 - Production time and limits
 
-### Types (`types.json` - 10 MB)
-- **32,177 item types** with properties
-- Base price, capacity, mass, volume, radius
-- Group ID, platform availability, published status
+### Ammo (`Ammo.json` - ~36 KB)
+- **23 ammo types** with damage stats
+- EM, explosive, kinetic, thermal damage values
 
-### Types Frontier (`types_frontier.json` - 216 KB)
-- **527 types** referenced in blueprints only
-- Filtered subset of types used in EVE Frontier gameplay
+### Fuel (`Fuel.json` - ~6 KB)
+- **10 fuel types** for ships and stations
 
-### Ships (`ships.json` - 140 KB)
-- **14 ships** with full dogma attributes
-- **54 stats** per ship: slots (H/M/L/E), hardpoints, power, CPU, HP, velocity, warp speed
-- Quick access stats + full dogma attribute data
-- Ships: TADES, Forlorn, Skiff, Foreman, Marshal, Echon, Rover, Carrier, Barge, Lurcher, Dreamer, Epoch, Carom, Stride
+### Materials (`Materials.json` - ~59 KB)
+- **157 materials** - ores, components, resources
 
 ## How It Works
 
 1. **Dynamically reads `resfileindex.txt`** to locate data files in ResFiles hash storage
 2. Extracts binary data (`.static`, `.fsdbinary`) from ResFiles  
 3. Uses EVE Frontier's native loaders (`typesLoader.pyd`, `typeDogmaLoader.pyd`, `code.ccp`)
-4. Converts to formatted JSON and cleans up temporary files
+4. Converts to formatted JSON with dogma attributes
+5. Cleans up temporary files
 
 **Game Updates:** When EVE Frontier patches, file hashes change. The extractor automatically handles this by reading fresh hashes from `resfileindex.txt` on every run - no code changes needed!
 
-## Selective Extraction with Dependencies
+## Selective Extraction (Advanced)
 
-Use `extract_selective.py` to select specific types and automatically include their manufacturing dependencies:
+Use `extract_selective.py` for category-based exports with dogma data:
 
 ```bash
+# Export specific categories
+python extract_selective.py --category ships --output Ships.json
+python extract_selective.py --category modules --output Modules.json
+python extract_selective.py --category ammo --output Ammo.json
+python extract_selective.py --category fuel --output Fuel.json
+python extract_selective.py --category materials --output Materials.json
+python extract_selective.py --category blueprints --output Blueprints.json
+
 # Search for types
 python extract_selective.py --search "TADES"
 
-# Show all dependencies for a type
+# Show dependencies for a type
 python extract_selective.py --deps 81808
-
-# Show full manufacturing chain
-python extract_selective.py --chain 81808
-
-# List types in a category
-python extract_selective.py --list-category modules
-
-# Export ships with all manufacturing dependencies
-python extract_selective.py --category ships --output ships_full.json
-
-# Export specific types with dependencies
-python extract_selective.py --types 82094,82095 --output disintegrators.json
-
-# Export without dependencies (just the types themselves)
-python extract_selective.py --types 82094 --no-deps --output single.json
 
 # Interactive mode
 python extract_selective.py --interactive
@@ -129,16 +131,14 @@ python extract_selective.py --interactive
 
 ### Categories
 
-| Category | Description |
-|----------|-------------|
-| `ships` | All 14 flyable ships |
-| `modules` | Weapons, shields, armor, propulsion, mining (~142 items) |
-| `ammo` | Charges and ammunition |
-| `components` | Craftable intermediate items |
-| `materials` | Raw and processed materials |
-| `ores` | Mineable ores and minerals |
-| `fuel` | Ship fuel types |
-| `blueprints` | All manufacturing blueprints |
+| Category | Count | Description |
+|----------|-------|-------------|
+| `ships` | 14 | All flyable ships with full dogma stats |
+| `modules` | 142 | Weapons, shields, armor, propulsion, mining |
+| `ammo` | 23 | Charges and ammunition with damage stats |
+| `fuel` | 10 | Ship and station fuel types |
+| `materials` | 157 | Raw and processed materials |
+| `blueprints` | 265 | All manufacturing recipes |
 
 ## Troubleshooting
 
